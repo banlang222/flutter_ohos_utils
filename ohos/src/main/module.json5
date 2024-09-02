@@ -1,0 +1,10 @@
+{
+  "module": {
+    "name": "flutter_ohos_utils",
+    "type": "har",
+    "deviceTypes": [
+      "default",
+      "tablet"
+    ]
+  }
+}
