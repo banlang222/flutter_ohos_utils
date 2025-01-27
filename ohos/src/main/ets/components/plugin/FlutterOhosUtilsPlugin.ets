@@ -11,6 +11,8 @@ import {
 import { productViewManager, updateManager } from '@kit.StoreKit';
 import { BusinessError } from '@kit.BasicServicesKit';
 import { bundleManager, common, UIAbility, Want } from '@kit.AbilityKit';
+import { fileUri, picker } from '@kit.CoreFileKit';
+import { fileIo as fs } from '@kit.CoreFileKit';
 
 /** FlutterOhosUtilsPlugin **/
 export default class FlutterOhosUtilsPlugin implements FlutterPlugin, MethodCallHandler, AbilityAware {
@@ -76,10 +78,65 @@ export default class FlutterOhosUtilsPlugin implements FlutterPlugin, MethodCall
       want.parameters = call.argument('parameters');
       want.entities = call.argument('entities');
       this.onOpenWant(want, result);
+    } else if(call.method == "saveDocument") {
+      let fileName: string = call.argument('fileName');
+      let fileExt: string = call.argument('fileExt');
+      let fileBytes: Uint8Array = call.argument('fileBytes');
+      this.onSaveDocument(result, fileName, fileExt, fileBytes);
     }
     else {
       result.notImplemented()
     }
+  }
+
+  onSaveDocument(result: MethodResult, fileName: string, fileExt: string, fileBytes: Uint8Array) {
+    // 创建文件管理器选项实例
+    const documentSaveOptions = new picker.DocumentSaveOptions();
+    // // 保存文件名（可选）
+    // documentSaveOptions.newFileNames = [fileName];
+    // // // 保存文件类型['后缀类型描述|后缀类型'],选择所有文件：'所有文件(*.*)|.*'（可选） ，如果选择项存在多个后缀，默认选择第一个。
+    // documentSaveOptions.fileSuffixChoices = [`.${fileExt}`];
+    // 请确保 getContext(this) 返回结果为 UIAbilityContext
+    documentSaveOptions.pickerMode = picker.DocumentPickerMode.DOWNLOAD;
+    let context = getContext(this) as common.Context;
+
+
+    // 创建文件选择器实例。
+    const documentViewPicker = new picker.DocumentViewPicker(context);
+    //用户选择目标文件夹，用户选择与文件类型相对应的文件夹，即可完成文件保存操作。保存成功后，返回保存文档的URI。
+    documentViewPicker.save(documentSaveOptions).then((documentSaveResult: Array<string>) => {
+      let cachePath = context.cacheDir + '/' + fileName + '.' + fileExt;
+      let file = fs.openSync(cachePath, fs.OpenMode.READ_WRITE | fs.OpenMode.CREATE);
+      let writeLen: number = fs.writeSync(file.fd, fileBytes.buffer);
+      console.info(`sandbox writeLen:${writeLen}}`);
+      fs.closeSync(file);
+
+      let uriString = new fileUri.FileUri(documentSaveResult[0]);
+      let destPath = uriString.path + '/' + fileName + '.' + fileExt;
+      let n: number = 1;
+      while(fs.accessSync(destPath)) {
+        destPath = uriString.path + '/' + fileName + `(${n}).` + fileExt;
+        n++;
+        console.info(`destPath=${destPath}}`);
+      }
+      // console.info(`destPath=${destPath}`);
+      fs.copyFileSync(cachePath, destPath ,0);
+      // fs.copyFileSync(cachePath, context.filesDir + fileName + '.' + fileExt, 0);
+      console.info('copy done');
+
+      // let uri = documentSaveResult[0];
+      //
+      // //这里需要注意接口权限参数是fs.OpenMode.READ_WRITE。
+      // let file = fs.openSync(uri, fs.OpenMode.READ_WRITE);
+      // console.info('file fd: ' + file.fd);
+      // let writeLen: number = fs.writeSync(file.fd, fileBytes.buffer);
+      // console.info('write data to file succeed and size is:' + writeLen);
+      // fs.closeSync(file);
+      result.success(true);
+    }).catch((err: BusinessError) => {
+      result.error(`${err.code}`, `${err.message}`, null);
+      console.error(`Invoke documentViewPicker.save failed, code is ${err.code}, message is ${err.message}`);
+    })
   }
 
   onCheckUpdate(result: MethodResult) {

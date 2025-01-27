@@ -59,7 +59,16 @@ class _MyAppState extends State<MyApp> {
                   bundleInfo = await FlutterOhosUtils.getBundleInfo();
                   setState(() {});
                 },
-                child: Text('get bundle Info: ${bundleInfo}'))
+                child: Text('get bundle Info: ${bundleInfo}')),
+            TextButton(
+              onPressed: () async {
+                var file = await rootBundle.load('assets/q8.pdf');
+                var ok = await FlutterOhosUtils.saveDocument(
+                    '报价单_Q008', 'pdf', file.buffer.asUint8List());
+                print('is ok ? $ok');
+              },
+              child: Text('保存pdf'),
+            )
           ],
         ),
       ),

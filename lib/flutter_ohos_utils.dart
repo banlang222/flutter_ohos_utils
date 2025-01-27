@@ -59,4 +59,15 @@ class FlutterOhosUtils {
   static Future<dynamic> openWant(Map<String, dynamic> want) async {
     return await channel.invokeMethod('openWant', want);
   }
+
+  static Future<bool> saveDocument(
+      String fileName, String fileExt, Uint8List fileBytes) async {
+    return await channel.invokeMethod('saveDocument', {
+      'fileName': fileName,
+      'fileExt': fileExt,
+      'fileBytes': fileBytes
+    }).catchError((error) {
+      print('err=$error');
+    });
+  }
 }
