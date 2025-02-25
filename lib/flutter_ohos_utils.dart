@@ -60,7 +60,7 @@ class FlutterOhosUtils {
     return await channel.invokeMethod('openWant', want);
   }
 
-  static Future<bool> saveDocument(
+  static Future<String> saveDocument(
       String fileName, String fileExt, Uint8List fileBytes) async {
     return await channel.invokeMethod('saveDocument', {
       'fileName': fileName,
@@ -69,5 +69,18 @@ class FlutterOhosUtils {
     }).catchError((error) {
       print('err=$error');
     });
+  }
+
+  ///application/pdf
+  ///text/plain、text/x-c++src、text/x-csrc、text/x-chdr、text/x-java、application/xhtml+xml、text/xml、
+  ///text/html
+  ///image/jpeg、image/png、image/gif、image/webp，image/bmp、image/svg+xml
+  ///audio/mp4a-latm、audio/aac、audio/mpeg、audio/ogg、audio/x-wav
+  ///video/mp4、video/x-matroska、video/mp2ts
+  ///application/msword、application/vnd.openxmlformats-officedocument.wordprocessingml.document、application/vnd.ms-excel、application/vnd.openxmlformats-officedocument.spreadsheetml.sheet、application/vnd.ms-powerpoint、application/vnd.openxmlformats-officedocument.presentationml.presentation、text/comma-separated-values
+  static Future<bool> previewFile(
+      String title, String path, String mimeType) async {
+    return await channel.invokeMethod(
+        'previewFile', {'title': title, 'path': path, 'mimeType': mimeType});
   }
 }

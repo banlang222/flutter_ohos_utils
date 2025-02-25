@@ -24,6 +24,8 @@ class _MyAppState extends State<MyApp> {
     super.initState();
   }
 
+  String? path;
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -63,12 +65,19 @@ class _MyAppState extends State<MyApp> {
             TextButton(
               onPressed: () async {
                 var file = await rootBundle.load('assets/q8.pdf');
-                var ok = await FlutterOhosUtils.saveDocument(
+                path = await FlutterOhosUtils.saveDocument(
                     '报价单_Q008', 'pdf', file.buffer.asUint8List());
-                print('is ok ? $ok');
+                print('save result: $path');
               },
               child: Text('保存pdf'),
-            )
+            ),
+            TextButton(
+                onPressed: () async {
+                  var ok = await FlutterOhosUtils.previewFile(
+                      '文件预览', '$path', 'application/pdf');
+                  print('is ok ? $ok');
+                },
+                child: Text('open file'))
           ],
         ),
       ),

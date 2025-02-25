@@ -13,6 +13,8 @@ import { BusinessError } from '@kit.BasicServicesKit';
 import { bundleManager, common, UIAbility, Want } from '@kit.AbilityKit';
 import { fileUri, picker } from '@kit.CoreFileKit';
 import { fileIo as fs } from '@kit.CoreFileKit';
+import { filePreview } from '@kit.PreviewKit';
+import featureAbility from '@ohos.ability.featureAbility';
 
 /** FlutterOhosUtilsPlugin **/
 export default class FlutterOhosUtilsPlugin implements FlutterPlugin, MethodCallHandler, AbilityAware {
@@ -83,10 +85,37 @@ export default class FlutterOhosUtilsPlugin implements FlutterPlugin, MethodCall
       let fileExt: string = call.argument('fileExt');
       let fileBytes: Uint8Array = call.argument('fileBytes');
       this.onSaveDocument(result, fileName, fileExt, fileBytes);
+    } else if(call.method == "previewFile") {
+      let title: string = call.argument('title');
+      let path: string = call.argument('path');
+      let mimeType: string = call.argument('mimeType');
+      this.onPreviewFile(result, title, path, mimeType);
     }
     else {
       result.notImplemented()
     }
+  }
+
+  onPreviewFile(result: MethodResult, title: string, path: string, mimeType: string) {
+    let uri = new fileUri.FileUri(path);
+    let fileInfo: filePreview.PreviewInfo = {
+      title: title,
+      uri: uri.toString(),
+      mimeType: mimeType
+    };
+    if(fs.accessSync(path)) {
+      filePreview.openPreview(this.context, fileInfo).then(() => {
+        console.info('Succeeded in opening preview');
+        result.success(true);
+      }).catch((err: BusinessError) => {
+        console.error(`Failed to open preview, err.code = ${err.code}, err.message = ${err.message}`);
+        result.error(`Failed to open preview, err.code = ${err.code}, err.message = ${err.message}`, '', '');
+      });
+    } else {
+      console.error(`file not access:${path}`);
+    }
+
+
   }
 
   onSaveDocument(result: MethodResult, fileName: string, fileExt: string, fileBytes: Uint8Array) {
@@ -121,7 +150,11 @@ export default class FlutterOhosUtilsPlugin implements FlutterPlugin, MethodCall
       }
       // console.info(`destPath=${destPath}`);
       fs.copyFileSync(cachePath, destPath ,0);
-      // fs.copyFileSync(cachePath, context.filesDir + fileName + '.' + fileExt, 0);
+      fs.access(destPath).then((value)=>{
+        console.info(`value=${value}`);
+      }).catch((error: BusinessError)=>{
+        console.error(`code=${error.code}}, name=${error.name}, message=${error.message}`);
+      });
       console.info('copy done');
 
       // let uri = documentSaveResult[0];
@@ -132,7 +165,7 @@ export default class FlutterOhosUtilsPlugin implements FlutterPlugin, MethodCall
       // let writeLen: number = fs.writeSync(file.fd, fileBytes.buffer);
       // console.info('write data to file succeed and size is:' + writeLen);
       // fs.closeSync(file);
-      result.success(true);
+      result.success(destPath);
     }).catch((err: BusinessError) => {
       result.error(`${err.code}`, `${err.message}`, null);
       console.error(`Invoke documentViewPicker.save failed, code is ${err.code}, message is ${err.message}`);
